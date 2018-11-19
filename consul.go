@@ -31,11 +31,13 @@ func GetConsulStateStore() (faasflow.StateStore, error) {
 	return consulST, nil
 }
 
+// Init
 func (consulStore *ConsulStateStore) Init(flowName string, requestId string) error {
 	consulStore.consulKeyPath = fmt.Sprintf("faasflow/%s/%s", flowName, requestId)
 	return nil
 }
 
+// Create
 func (consulStore *ConsulStateStore) Create(vertexs []string) error {
 
 	for _, vertex := range vertexs {
@@ -49,6 +51,7 @@ func (consulStore *ConsulStateStore) Create(vertexs []string) error {
 	return nil
 }
 
+// IncrementCounter
 func (consulStore *ConsulStateStore) IncrementCounter(vertex string) (int, error) {
 	count := 0
 	key := fmt.Sprintf("%s/%s", consulStore.consulKeyPath, vertex)
@@ -75,6 +78,37 @@ func (consulStore *ConsulStateStore) IncrementCounter(vertex string) (int, error
 	return count, nil
 }
 
+// SetState set state of pipeline
+func (consulStore *ConsulStateStore) SetState(state bool) error {
+	key := fmt.Sprintf("%s/state", consulStore.consulKeyPath)
+	stateStr := "false"
+	if state {
+		stateStr = "true"
+	}
+
+	p := &consul.KVPair{Key: key, Value: []byte(stateStr)}
+	_, err := consulStore.kv.Put(p, nil)
+	if err != nil {
+		return fmt.Errorf("failed to set state, error %v", err)
+	}
+	return nil
+}
+
+// GetState set state of the pipeline
+func (consulStore *ConsulStateStore) GetState() (bool, error) {
+	key := fmt.Sprintf("%s/state", consulStore.consulKeyPath)
+	pair, _, err := consulStore.kv.Get(key, nil)
+	if err != nil {
+		return false, fmt.Errorf("failed to get state, error %v", err)
+	}
+	state := false
+	if string(pair.Value) == "true" {
+		state = true
+	}
+	return state, nil
+}
+
+// Cleanup
 func (consulStore *ConsulStateStore) Cleanup() error {
 	_, err := consulStore.kv.DeleteTree(consulStore.consulKeyPath, nil)
 	if err != nil {
