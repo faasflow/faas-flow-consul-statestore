@@ -1,2 +1,2 @@
 # faasflow-consul-statestore
-A **[faasflow](https://github.com/s8sg/faasflow)** statestore implementation that uses Consul to store state
+A **[faas-flow](https://github.com/s8sg/faas-flow)** statestore implementation that uses Consul to store state
