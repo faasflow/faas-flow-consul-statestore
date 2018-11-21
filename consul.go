@@ -31,9 +31,13 @@ func GetConsulStateStore() (faasflow.StateStore, error) {
 	return consulST, nil
 }
 
-// Init
-func (consulStore *ConsulStateStore) Init(flowName string, requestId string) error {
+// Configure
+func (consulStore *ConsulStateStore) Configure(flowName string, requestId string) {
 	consulStore.consulKeyPath = fmt.Sprintf("faasflow/%s/%s", flowName, requestId)
+}
+
+// Init (Called only once in a request)
+func (consulStore *ConsulStateStore) Init() error {
 	return nil
 }
 
@@ -108,7 +112,7 @@ func (consulStore *ConsulStateStore) GetState() (bool, error) {
 	return state, nil
 }
 
-// Cleanup
+// Cleanup (Called only once in a request)
 func (consulStore *ConsulStateStore) Cleanup() error {
 	_, err := consulStore.kv.DeleteTree(consulStore.consulKeyPath, nil)
 	if err != nil {
