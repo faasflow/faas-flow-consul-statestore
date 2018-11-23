@@ -15,11 +15,19 @@ type ConsulStateStore struct {
 	RetryCount int
 }
 
-func GetConsulStateStore() (faasflow.StateStore, error) {
+func GetConsulStateStore(address, datacenter string) (faasflow.StateStore, error) {
 
 	consulST := &ConsulStateStore{}
 
-	cc, err := consul.NewClient(consul.DefaultConfig())
+	config := consul.DefaultConfig()
+	if address != "" {
+		config.Address = address
+	}
+	if datacenter != "" {
+		config.Datacenter = datacenter
+	}
+
+	cc, err := consul.NewClient(config)
 	if err != nil {
 		return nil, err
 	}
