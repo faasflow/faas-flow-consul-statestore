@@ -86,6 +86,7 @@ func (consulStore *ConsulStateStore) IncrementCounter(vertex string) (int, error
 		if err != nil {
 			continue
 		}
+		break
 	}
 	return count, nil
 }
