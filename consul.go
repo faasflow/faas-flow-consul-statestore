@@ -72,13 +72,16 @@ func (consulStore *ConsulStateStore) IncrementCounter(vertex string) (int, error
 		if err != nil {
 			return 0, fmt.Errorf("failed to get vertex %s, error %v", vertex, err)
 		}
+		if pair == nil {
+			return 0, fmt.Errorf("failed to get vertex %s", vertex)
+		}
 		modifyIndex := pair.ModifyIndex
 		counter, err := strconv.Atoi(string(pair.Value))
 		if err != nil {
 			return 0, fmt.Errorf("failed to convert counter for %s, error %v", vertex, err)
 		}
 
-		count := counter + 1
+		count = counter + 1
 		counterStr := fmt.Sprintf("%d", count)
 
 		p := &consul.KVPair{Key: key, Value: []byte(counterStr), ModifyIndex: modifyIndex}
@@ -113,6 +116,9 @@ func (consulStore *ConsulStateStore) GetState() (bool, error) {
 	pair, _, err := consulStore.kv.Get(key, nil)
 	if err != nil {
 		return false, fmt.Errorf("failed to get state, error %v", err)
+	}
+	if pair == nil {
+		return false, fmt.Errorf("failed to get state")
 	}
 	state := false
 	if string(pair.Value) == "true" {
