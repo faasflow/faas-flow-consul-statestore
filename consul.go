@@ -65,6 +65,7 @@ func (consulStore *ConsulStateStore) Create(vertexs []string) error {
 
 // IncrementCounter
 func (consulStore *ConsulStateStore) IncrementCounter(vertex string) (int, error) {
+	var serr error
 	count := 0
 	key := fmt.Sprintf("%s/%s", consulStore.consulKeyPath, vertex)
 	for i := 0; i < consulStore.RetryCount; i++ {
@@ -78,7 +79,7 @@ func (consulStore *ConsulStateStore) IncrementCounter(vertex string) (int, error
 		modifyIndex := pair.ModifyIndex
 		counter, err := strconv.Atoi(string(pair.Value))
 		if err != nil {
-			return 0, fmt.Errorf("failed to convert counter for %s, error %v", vertex, err)
+			return 0, fmt.Errorf("failed to update counter for %s, error %v", vertex, err)
 		}
 
 		count = counter + 1
@@ -86,12 +87,12 @@ func (consulStore *ConsulStateStore) IncrementCounter(vertex string) (int, error
 
 		p := &consul.KVPair{Key: key, Value: []byte(counterStr), ModifyIndex: modifyIndex}
 		_, err = consulStore.kv.Put(p, nil)
-		if err != nil {
-			continue
+		if err == nil {
+			return count, nil
 		}
-		break
+		serr = err
 	}
-	return count, nil
+	return 0, fmt.Errorf("failed to update counter after max retry for %s, error %v", vertex, serr)
 }
 
 // SetState set state of pipeline
