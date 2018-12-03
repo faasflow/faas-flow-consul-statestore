@@ -24,7 +24,7 @@ docker deploy --compose-file=resource/consul-swarm.yml statestore
     consul_url: "statestore_consul:8500"
     consul_dc: "dc1"
 ```
-* Use the `faasflowMinioDataStore` as a DataStore on `handler.go`
+* Use the `ConsulStateStore` as a DataStore on `handler.go`
 ```go
 consulStateStore "github.com/s8sg/faas-flow-consul-statestore"
 
