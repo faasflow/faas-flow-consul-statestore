@@ -8,13 +8,8 @@ A **[faas-flow](https://github.com/s8sg/faas-flow)** statestore implementation t
 #### Deploy in Swarm
 ```bash
 docker service rm statestore_consul
-
 docker pull s8sg/consul
-
-[!"$(docker network ls | grep consul)"] && \
-  docker network create consul -d overlay --subnet=172.20.0.0/24
-
-docker deploy --compose-file=resource/consul-swarm.yml statestore
+docker stack deploy --compose-file=resource/consul-swarm.yml statestore
 ```
 
 
