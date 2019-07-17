@@ -34,8 +34,11 @@ services:
 
 networks:
     consul:
-        external:
-            name: consul
+        driver: overlay
+        ipam:
+           driver: default
+           config:
+             - subnet: 172.20.0.0/24
 
     func_functions:
         external:

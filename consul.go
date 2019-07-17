@@ -4,7 +4,6 @@ import (
 	"fmt"
 	consul "github.com/hashicorp/consul/api"
 	faasflow "github.com/s8sg/faas-flow"
-	"strconv"
 )
 
 type ConsulStateStore struct {
@@ -49,61 +48,33 @@ func (consulStore *ConsulStateStore) Init() error {
 	return nil
 }
 
-// Create
-func (consulStore *ConsulStateStore) Create(vertexs []string) error {
+// Update Compare and Update a valuer
+func (consulStore *ConsulStateStore) Update(key string, oldValue string, newValue string) error {
+	key = consulStore.consulKeyPath + "/" + key
+	pair, _, err := consulStore.kv.Get(key, nil)
+	if err != nil {
+		return fmt.Errorf("failed to get key %s, error %v", key, err)
+	}
+	if pair == nil {
+		return fmt.Errorf("failed to get key %s", key)
+	}
+	if string(pair.Value) != oldValue {
+		return fmt.Errorf("Old value doesn't match %s", key)
+	}
+	modifyIndex := pair.ModifyIndex
 
-	for _, vertex := range vertexs {
-		key := fmt.Sprintf("%s/%s", consulStore.consulKeyPath, vertex)
-		p := &consul.KVPair{Key: key, Value: []byte("0")}
-		_, err := consulStore.kv.Put(p, nil)
-		if err != nil {
-			return fmt.Errorf("failed to create vertex %s, error %v", vertex, err)
-		}
+	p := &consul.KVPair{Key: key, Value: []byte(newValue), ModifyIndex: modifyIndex}
+	_, err = consulStore.kv.Put(p, nil)
+	if err != nil {
+		return fmt.Errorf("failed to update %s, error %v", key, err)
 	}
 	return nil
 }
 
-// IncrementCounter
-func (consulStore *ConsulStateStore) IncrementCounter(vertex string) (int, error) {
-	var serr error
-	count := 0
-	key := fmt.Sprintf("%s/%s", consulStore.consulKeyPath, vertex)
-	for i := 0; i < consulStore.RetryCount; i++ {
-		pair, _, err := consulStore.kv.Get(key, nil)
-		if err != nil {
-			return 0, fmt.Errorf("failed to get vertex %s, error %v", vertex, err)
-		}
-		if pair == nil {
-			return 0, fmt.Errorf("failed to get vertex %s", vertex)
-		}
-		modifyIndex := pair.ModifyIndex
-		counter, err := strconv.Atoi(string(pair.Value))
-		if err != nil {
-			return 0, fmt.Errorf("failed to update counter for %s, error %v", vertex, err)
-		}
-
-		count = counter + 1
-		counterStr := fmt.Sprintf("%d", count)
-
-		p := &consul.KVPair{Key: key, Value: []byte(counterStr), ModifyIndex: modifyIndex}
-		_, err = consulStore.kv.Put(p, nil)
-		if err == nil {
-			return count, nil
-		}
-		serr = err
-	}
-	return 0, fmt.Errorf("failed to update counter after max retry for %s, error %v", vertex, serr)
-}
-
-// SetState set state of pipeline
-func (consulStore *ConsulStateStore) SetState(state bool) error {
-	key := fmt.Sprintf("%s/state", consulStore.consulKeyPath)
-	stateStr := "false"
-	if state {
-		stateStr = "true"
-	}
-
-	p := &consul.KVPair{Key: key, Value: []byte(stateStr)}
+// Set Sets a value (override existing, or create one)
+func (consulStore *ConsulStateStore) Set(key string, value string) error {
+	key = consulStore.consulKeyPath + "/" + key
+	p := &consul.KVPair{Key: key, Value: []byte(value)}
 	_, err := consulStore.kv.Put(p, nil)
 	if err != nil {
 		return fmt.Errorf("failed to set state, error %v", err)
@@ -111,21 +82,17 @@ func (consulStore *ConsulStateStore) SetState(state bool) error {
 	return nil
 }
 
-// GetState set state of the pipeline
-func (consulStore *ConsulStateStore) GetState() (bool, error) {
-	key := fmt.Sprintf("%s/state", consulStore.consulKeyPath)
+// Get Gets a value
+func (consulStore *ConsulStateStore) Get(key string) (string, error) {
+	key = consulStore.consulKeyPath + "/" + key
 	pair, _, err := consulStore.kv.Get(key, nil)
 	if err != nil {
-		return false, fmt.Errorf("failed to get state, error %v", err)
+		return "", fmt.Errorf("failed to get state, error %v", err)
 	}
 	if pair == nil {
-		return false, fmt.Errorf("failed to get state")
+		return "", fmt.Errorf("failed to get state")
 	}
-	state := false
-	if string(pair.Value) == "true" {
-		state = true
-	}
-	return state, nil
+	return string(pair.Value), nil
 }
 
 // Cleanup (Called only once in a request)
