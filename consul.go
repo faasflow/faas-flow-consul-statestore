@@ -59,14 +59,14 @@ func (consulStore *ConsulStateStore) Update(key string, oldValue string, newValu
 		return fmt.Errorf("failed to get key %s", key)
 	}
 	if string(pair.Value) != oldValue {
-		return fmt.Errorf("Old value doesn't match %s", key)
+		return fmt.Errorf("Old value doesn't match for key %s", key)
 	}
 	modifyIndex := pair.ModifyIndex
 
 	p := &consul.KVPair{Key: key, Value: []byte(newValue), ModifyIndex: modifyIndex}
 	_, err = consulStore.kv.Put(p, nil)
 	if err != nil {
-		return fmt.Errorf("failed to update %s, error %v", key, err)
+		return fmt.Errorf("failed to update key %s, error %v", key, err)
 	}
 	return nil
 }
@@ -77,7 +77,7 @@ func (consulStore *ConsulStateStore) Set(key string, value string) error {
 	p := &consul.KVPair{Key: key, Value: []byte(value)}
 	_, err := consulStore.kv.Put(p, nil)
 	if err != nil {
-		return fmt.Errorf("failed to set state, error %v", err)
+		return fmt.Errorf("failed to set key %s, error %v", key, err)
 	}
 	return nil
 }
@@ -87,10 +87,10 @@ func (consulStore *ConsulStateStore) Get(key string) (string, error) {
 	key = consulStore.consulKeyPath + "/" + key
 	pair, _, err := consulStore.kv.Get(key, nil)
 	if err != nil {
-		return "", fmt.Errorf("failed to get state, error %v", err)
+		return "", fmt.Errorf("failed to get %s, error %v", key, err)
 	}
 	if pair == nil {
-		return "", fmt.Errorf("failed to get state")
+		return "", fmt.Errorf("failed to get %s, returned nil", key)
 	}
 	return string(pair.Value), nil
 }
