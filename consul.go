@@ -3,7 +3,7 @@ package ConsulStateStore
 import (
 	"fmt"
 	consul "github.com/hashicorp/consul/api"
-	faasflow "github.com/s8sg/faas-flow"
+	faasflow "github.com/faasflow/sdk"
 )
 
 type ConsulStateStore struct {
